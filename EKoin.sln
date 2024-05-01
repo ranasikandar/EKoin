@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31321.278
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EKoin", "EKoin\EKoin.csproj", "{12AC9ABA-31F7-4A2A-866C-B793ABDD14AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Library", "Library\Library.csproj", "{BA77FA7F-41CA-49C3-A6C6-BEA2336D0E5B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Models", "Models\Models.csproj", "{376DAE69-D0B1-495D-9DE8-C6D954F5596D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{12AC9ABA-31F7-4A2A-866C-B793ABDD14AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12AC9ABA-31F7-4A2A-866C-B793ABDD14AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12AC9ABA-31F7-4A2A-866C-B793ABDD14AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12AC9ABA-31F7-4A2A-866C-B793ABDD14AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA77FA7F-41CA-49C3-A6C6-BEA2336D0E5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA77FA7F-41CA-49C3-A6C6-BEA2336D0E5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA77FA7F-41CA-49C3-A6C6-BEA2336D0E5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA77FA7F-41CA-49C3-A6C6-BEA2336D0E5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{376DAE69-D0B1-495D-9DE8-C6D954F5596D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{376DAE69-D0B1-495D-9DE8-C6D954F5596D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{376DAE69-D0B1-495D-9DE8-C6D954F5596D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{376DAE69-D0B1-495D-9DE8-C6D954F5596D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {368C4190-0969-49A8-9C1E-30966460A51E}
+	EndGlobalSection
+EndGlobal
