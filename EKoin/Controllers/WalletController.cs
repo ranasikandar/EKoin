@@ -14,14 +14,20 @@ namespace EKoin.Controllers
     public class WalletController : ControllerBase
     {
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private readonly ILibraryWallet libraryWallet;
+        private readonly IMySettings mySettings;
+        public WalletController(ILibraryWallet _libraryWallet, IMySettings _mySettings)
+        {
+            libraryWallet = _libraryWallet;
+            mySettings = _mySettings;
+        }
 
         [HttpGet("New")]
         public IActionResult New()
         {
             try
             {
-                Wallet walletH = new Wallet();
-                Key_Pair wallet = walletH.GenPubPk();
+                Key_Pair wallet = libraryWallet.GenPubPk();
                 return Ok(new { pkx = wallet.PrivateKey_Hex, pubx = wallet.PublicKey_Hex, addr = wallet.Address_String, mnem = wallet.Mnemonic_12_Words });
             }
             catch (Exception ex)
@@ -37,7 +43,7 @@ namespace EKoin.Controllers
         {
             try
             {
-                string myPubk = MySettings.GetValue("my_pubx", "myWallet.json");
+                string myPubk = mySettings.GetValue("my_pubx", "myWallet.json");
                 return Ok(myPubk);
             }
             catch (Exception ex)
@@ -53,7 +59,7 @@ namespace EKoin.Controllers
         {
             try
             {
-                string myAddr = MySettings.GetValue("my_addr", "myWallet.json");
+                string myAddr = mySettings.GetValue("my_addr", "myWallet.json");
                 return Ok(myAddr);
             }
             catch (Exception ex)
@@ -68,8 +74,7 @@ namespace EKoin.Controllers
         {
             try
             {
-                Wallet walletH = new Wallet();
-                Key_Pair wallet = walletH.GenPubPkFromMnemonic(Mnemonic12Words);
+                Key_Pair wallet = libraryWallet.GenPubPkFromMnemonic(Mnemonic12Words);
                 return Ok(new { pkx = wallet.PrivateKey_Hex, pubx = wallet.PublicKey_Hex, addr = wallet.Address_String, mnem = wallet.Mnemonic_12_Words });
             }
             catch (Exception ex)
@@ -85,10 +90,9 @@ namespace EKoin.Controllers
         {
             try
             {
-                Wallet walletH = new Wallet();
-                Key_Pair wallet = walletH.GenPubPkFromMnemonic(Mnemonic12Words);
+                Key_Pair wallet = libraryWallet.GenPubPkFromMnemonic(Mnemonic12Words);
 
-                MySettings.SetValue(new string[] { "my_pkx", "my_pubx", "my_addr", "my_mnem" }
+                mySettings.SetValue(new string[] { "my_pkx", "my_pubx", "my_addr", "my_mnem" }
                 , new string[] { wallet.PrivateKey_Hex, wallet.PublicKey_Hex, wallet.Address_String, wallet.Mnemonic_12_Words }, "myWallet.json");
 
                 return Ok(new { pubx = wallet.PublicKey_Hex, addr = wallet.Address_String });
@@ -106,8 +110,7 @@ namespace EKoin.Controllers
         {
             try
             {
-                Wallet walletH = new Wallet();
-                Signature_Data_Hash signature_D_Hash = walletH.SignData(isBase58OtherwiseHEX, privateKey, data);
+                Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(isBase58OtherwiseHEX, privateKey, data);
 
                 return Ok(signature_D_Hash);
             }
@@ -128,8 +131,7 @@ namespace EKoin.Controllers
                 NBitcoin.uint256 uint_256 = new uint256(Convert.FromBase64String(dHash));
                 ECDSASignature eCDSASignature = new ECDSASignature(Convert.FromBase64String(derSign));
 
-                Wallet walletH = new Wallet();
-                bool verdata = walletH.VerifyData(pubKey, uint_256, eCDSASignature);
+                bool verdata = libraryWallet.VerifyData(pubKey, uint_256, eCDSASignature);
                 return Ok(verdata);
             }
             catch (Exception ex)
@@ -145,7 +147,7 @@ namespace EKoin.Controllers
         {
             try
             {
-                PubKey pubKey = new PubKey(MySettings.GetValue("my_pubx", "myWallet.json"));
+                PubKey pubKey = new PubKey(mySettings.GetValue("my_pubx", "myWallet.json"));
                 
                 // Convert the message to a byte array
                 byte[] messageBytes = System.Text.Encoding.UTF8.GetBytes(@data);
@@ -154,8 +156,7 @@ namespace EKoin.Controllers
 
                 ECDSASignature eCDSASignature = new ECDSASignature(Convert.FromBase64String(derSign));
 
-                Wallet walletH = new Wallet();
-                bool verdata = walletH.VerifyData(pubKey, uint_256, eCDSASignature);
+                bool verdata = libraryWallet.VerifyData(pubKey, uint_256, eCDSASignature);
                 return Ok(verdata);
             }
             catch (Exception ex)
@@ -171,13 +172,7 @@ namespace EKoin.Controllers
         {
             try
             {
-                // Convert the message to a byte array
-                byte[] messageBytes = System.Text.Encoding.UTF8.GetBytes(@data);
-
-                // Compute the hash of the message
-                uint256 messageHash = Hashes.DoubleSHA256(messageBytes);
-
-                return Ok(messageHash.ToBytes(true));
+                return Ok(libraryWallet.GenSHA256Hash(@data).ToBytes(true));
             }
             catch (Exception ex)
             {
@@ -193,8 +188,7 @@ namespace EKoin.Controllers
         {
             try
             {
-                Wallet walletH = new Wallet();
-                Signature_Data_Hash signature_D_Hash = walletH.SignData(false, MySettings.GetValue("my_pkx", "myWallet.json"), data);
+                Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), data);
 
                 return Ok(signature_D_Hash);
             }

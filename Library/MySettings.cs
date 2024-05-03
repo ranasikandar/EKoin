@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace Library
 {
-    public static class MySettings
+    public class MySettings : IMySettings
     {
-        public static bool SetValue(string[] key, string[] value, string fileName)
+        public bool SetValue(string[] key, string[] value, string fileName)
         {
             try
             {
@@ -61,7 +61,7 @@ namespace Library
 
         }
 
-        public static string GetValue(string key, string fileName)
+        public string GetValue(string key, string fileName)
         {
             try
             {

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Library;
+using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.DB;
 using NLog;
@@ -16,9 +17,11 @@ namespace EKoin.Controllers
     {
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
         private readonly INodeRepo nodeRepo;
-        public SettingsController(INodeRepo _nodeRepo)
+        private readonly ILibraryWallet libraryWallet;
+        public SettingsController(INodeRepo _nodeRepo, ILibraryWallet _libraryWallet)
         {
             nodeRepo = _nodeRepo;
+            libraryWallet = _libraryWallet;
         }
 
         [HttpGet("GetNodes")]

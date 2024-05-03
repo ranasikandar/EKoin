@@ -16,6 +16,15 @@ namespace EKoin.Controllers
     public class PublicController : ControllerBase
     {
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private readonly ILibraryWallet libraryWallet;
+        private readonly IMySettings mySettings;
+
+        public PublicController(ILibraryWallet _libraryWallet, IMySettings _mySettings)
+        {
+            libraryWallet = _libraryWallet;
+            mySettings = _mySettings;
+        }
+
 
         [HttpGet("Hi")]
         public IActionResult Hi()
@@ -80,10 +89,9 @@ namespace EKoin.Controllers
         {
             try
             {
-                string mypubkx = MySettings.GetValue("my_pubx", "myWallet.json");
+                string mypubkx = mySettings.GetValue("my_pubx", "myWallet.json");
 
-                Wallet walletH = new Wallet();
-                Signature_Data_Hash signature_D_Hash = walletH.SignData(false, MySettings.GetValue("my_pkx", "myWallet.json"), mypubkx);
+                Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), mypubkx);
 
                 return Ok(new { pubkx=mypubkx, DerSign=signature_D_Hash.DerSign});
             }
@@ -100,8 +108,7 @@ namespace EKoin.Controllers
         {
             try
             {
-                Wallet walletH = new Wallet();
-                Signature_Data_Hash signature_D_Hash = walletH.SignData(false, MySettings.GetValue("my_pkx", "myWallet.json"), data);
+                Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), data);
 
                 return Ok(signature_D_Hash);
             }

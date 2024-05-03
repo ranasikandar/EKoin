@@ -9,7 +9,7 @@ using static Models.Wallet;
 
 namespace Library
 {
-    public class Wallet
+    public class Wallet:ILibraryWallet
     {
         public Key_Pair GenPubPk()
         {
@@ -235,5 +235,22 @@ namespace Library
             }
         }
 
+        public uint256 GenSHA256Hash(string @data)
+        {
+            try
+            {
+                // Convert the message to a byte array
+                byte[] messageBytes = System.Text.Encoding.UTF8.GetBytes(@data);
+
+                // Compute the hash of the message
+                uint256 messageHash = Hashes.DoubleSHA256(messageBytes);
+
+                return messageHash;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
     }
 }

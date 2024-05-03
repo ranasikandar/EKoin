@@ -1,3 +1,4 @@
+using Library;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -43,7 +44,8 @@ namespace EKoin
                     Library.Wallet walletH = new Library.Wallet();
                     Key_Pair wallet = walletH.GenPubPk();
 
-                    dynamic jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(@"{'my_pkx':'" + wallet.PrivateKey_Hex + "','my_pubx':'" + wallet.PublicKey_Hex + "','my_addr':'" + wallet.Address_String + "','my_mnem':'" + wallet.Mnemonic_12_Words + "'}");
+                    dynamic jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(@"{'my_pkx':'" + wallet.PrivateKey_Hex 
+                        + "','my_pubx':'" + wallet.PublicKey_Hex + "','my_addr':'" + wallet.Address_String + "','my_mnem':'" + wallet.Mnemonic_12_Words + "'}");
                     string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
                     File.WriteAllText(Path.Combine(System.AppContext.BaseDirectory, "myWallet.json"), output);
                 }
@@ -56,6 +58,9 @@ namespace EKoin
 
             services.AddDbContextPool<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("ConnectionString")));
             services.AddScoped<INodeRepo, NodeRepo>();
+
+            services.AddScoped<ILibraryWallet, Library.Wallet>();
+            services.AddScoped<IMySettings, MySettings>();
 
             services.AddControllers();
             services.AddSwaggerGen(c =>

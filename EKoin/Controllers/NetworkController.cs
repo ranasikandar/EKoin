@@ -22,10 +22,13 @@ namespace EKoin.Controllers
     {
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
         private readonly INodeRepo nodeRepo;
-
-        public NetworkController(INodeRepo _nodeRepo)
+        private readonly ILibraryWallet libraryWallet;
+        private readonly IMySettings mySettings;
+        public NetworkController(INodeRepo _nodeRepo, ILibraryWallet _libraryWallet, IMySettings _mySettings)
         {
             nodeRepo = _nodeRepo;
+            libraryWallet = _libraryWallet;
+            mySettings = _mySettings;
         }
 
 
@@ -43,8 +46,7 @@ namespace EKoin.Controllers
                 // Compute the hash of the message
                 uint256 messageHashR = Hashes.DoubleSHA256(messageBytesR);
 
-                Library.Wallet walletH = new Library.Wallet();
-                bool verdata = walletH.VerifyData(pubKeyr, messageHashR, eCDSASignatureR);
+                bool verdata = libraryWallet.VerifyData(pubKeyr, messageHashR, eCDSASignatureR);
                 //verify remote node pubk with dersign
 
                 if (verdata)
@@ -74,8 +76,8 @@ namespace EKoin.Controllers
 
 
                     //sign my pubkx and send with dersign
-                    string mypubkx = MySettings.GetValue("my_pubx", "myWallet.json");
-                    Signature_Data_Hash signature_D_Hash = walletH.SignData(false, MySettings.GetValue("my_pkx", "myWallet.json"), mypubkx);
+                    string mypubkx = mySettings.GetValue("my_pubx", "myWallet.json");
+                    Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), mypubkx);
                     return Ok(new { pubkx = mypubkx, derSign = signature_D_Hash.DerSign });
                 }
                 else
@@ -115,8 +117,7 @@ namespace EKoin.Controllers
 
                 string netNodeData = JsonSerializer.Serialize(networkNodeVM.Nodes);
 
-                Library.Wallet walletH = new Library.Wallet();
-                Signature_Data_Hash signature_D_Hash = walletH.SignData(false, MySettings.GetValue("my_pkx", "myWallet.json"), netNodeData);
+                Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), netNodeData);
 
                 //return Ok(new { nodes= networkNodeVM, derSign =signature_D_Hash.DerSign});
 
