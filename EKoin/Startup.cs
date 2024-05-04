@@ -1,3 +1,4 @@
+using EKoin.Services;
 using Library;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -31,37 +32,17 @@ namespace EKoin
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            #region LOAD GLOBAL VAR & SETTINGS
-            
-            #endregion
-
-            #region CHECK IF WALLET FILE IS NOT PRESENT CREATE NEW 
-            if (!File.Exists(Path.Combine(System.AppContext.BaseDirectory, "myWallet.json")))
-            {
-                logger.Info("No myWallet.json file, creating new");
-                try
-                {
-                    Library.Wallet walletH = new Library.Wallet();
-                    Key_Pair wallet = walletH.GenPubPk();
-
-                    dynamic jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(@"{'my_pkx':'" + wallet.PrivateKey_Hex 
-                        + "','my_pubx':'" + wallet.PublicKey_Hex + "','my_addr':'" + wallet.Address_String + "','my_mnem':'" + wallet.Mnemonic_12_Words + "'}");
-                    string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
-                    File.WriteAllText(Path.Combine(System.AppContext.BaseDirectory, "myWallet.json"), output);
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex);
-                }
-            }
-            #endregion
+            services.AddMemoryCache();
 
             services.AddDbContextPool<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("ConnectionString")));
             services.AddScoped<INodeRepo, NodeRepo>();
+            services.AddScoped<ILedgerRepo, LedgerRepo>();
 
-            services.AddScoped<ILibraryWallet, Library.Wallet>();
-            services.AddScoped<IMySettings, MySettings>();
+            services.AddSingleton<ILibraryWallet, Library.Wallet>();
+            services.AddSingleton<IMySettings, MySettings>();
 
+            services.AddHostedService<LoadingNodeService>();
+            
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {

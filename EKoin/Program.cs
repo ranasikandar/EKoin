@@ -1,3 +1,4 @@
+using EKoin.Utility;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -6,6 +7,7 @@ using NLog.Web;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace EKoin
@@ -45,19 +47,49 @@ namespace EKoin
             }
         }
 
+        //public static IHostBuilder CreateHostBuilder(string[] args) =>
+        //    Host.CreateDefaultBuilder(args)
+        //        .ConfigureWebHostDefaults(webBuilder =>
+        //        {
+        //            webBuilder.UseStartup<Startup>();
+        //        })
+        //        .ConfigureLogging(logging =>
+        //        {
+        //            logging.ClearProviders();
+        //            logging.SetMinimumLevel(LogLevel.Warning);
+        //        })
+        //        .UseNLog();  // NLog: Setup NLog for Dependency injection
+
         public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
+    Host.CreateDefaultBuilder(args)
+            .ConfigureWebHostDefaults(webBuilder => {
+
+                if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == Environments.Development)
                 {
                     webBuilder.UseStartup<Startup>();
-                })
-                .ConfigureLogging(logging =>
+                }
+                else
                 {
-                    logging.ClearProviders();
-                    logging.SetMinimumLevel(LogLevel.Warning);
-                })
-                .UseNLog();  // NLog: Setup NLog for Dependency injection
+                    webBuilder.UseStartup<Startup>()
+                    // Add UseKestrel to control it's options
+                    .UseKestrel(options =>
+                     {
+                         //// http:localhost:5000
+                         //options.Listen(IPAddress.Loopback, 5000);
+                         // https:*:45997
+                         ////todo get --urls http://+:45997 from args and use port
+                         options.Listen(IPAddress.Any, 45997, listenOptions =>
+                         {
+                             listenOptions.UseHttps(GetSelfSignedCertificate.GenCertificate());
+                         });
+                     });
+                }
 
+
+            }).ConfigureLogging(logging => {
+                logging.ClearProviders();
+                logging.SetMinimumLevel(LogLevel.Warning);
+            }).UseNLog();
 
     }
 }

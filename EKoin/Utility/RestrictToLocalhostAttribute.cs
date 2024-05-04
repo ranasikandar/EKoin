@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Net;
 
-namespace EKoin
+namespace EKoin.Utility
 {
     //Be careful with context.HttpContext.Connection.RemoteIpAddress.
     //If you in forward-proxy mode (some other webserver like IIS or Nginx forwards requests to you) -

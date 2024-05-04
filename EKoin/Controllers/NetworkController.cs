@@ -1,5 +1,6 @@
 ﻿using Library;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Models;
 using Models.DB;
 using NBitcoin;
@@ -24,16 +25,20 @@ namespace EKoin.Controllers
         private readonly INodeRepo nodeRepo;
         private readonly ILibraryWallet libraryWallet;
         private readonly IMySettings mySettings;
-        public NetworkController(INodeRepo _nodeRepo, ILibraryWallet _libraryWallet, IMySettings _mySettings)
+        private readonly ILedgerRepo ledgerRepo;
+        private readonly IMemoryCache memoryCache;
+        public NetworkController(INodeRepo _nodeRepo, ILibraryWallet _libraryWallet, IMySettings _mySettings,ILedgerRepo _ledgerRepo, IMemoryCache _memoryCache)
         {
             nodeRepo = _nodeRepo;
             libraryWallet = _libraryWallet;
             mySettings = _mySettings;
+            ledgerRepo = _ledgerRepo;
+            memoryCache = _memoryCache;
         }
 
 
-        [HttpPost("AnnonceNode")]//tp data is not include in signed data it can be manupulated by MITM
-        public async Task<IActionResult> AnnonceNode(string pubkx, string derSign, bool isTP = false)
+        [HttpPost("RememberMe")]
+        public async Task<IActionResult> RememberMe(string pubkx, string derSign, bool isTP = true)
         {
             try
             {
@@ -93,8 +98,47 @@ namespace EKoin.Controllers
             }
         }
 
+        [HttpPost("ForgetMe")]
+        public async Task<IActionResult> ForgetMe(string pubkx, string derSign)
+        {
+            try
+            {
+                PubKey pubKeyr = new PubKey(pubkx);
+                ECDSASignature eCDSASignatureR = new ECDSASignature(Convert.FromBase64String(derSign));
+
+                // Convert the message to a byte array
+                byte[] messageBytesR = System.Text.Encoding.UTF8.GetBytes(pubkx);
+                // Compute the hash of the message
+                uint256 messageHashR = Hashes.DoubleSHA256(messageBytesR);
+
+                bool verifydata = libraryWallet.VerifyData(pubKeyr, messageHashR, eCDSASignatureR);
+
+                if (verifydata)
+                {
+                    //db remove node
+                    IPAddress remoteIpAddress = new IPAddress(0);
+                    remoteIpAddress = Request.HttpContext.Connection.RemoteIpAddress;
+                    //compare in db
+                    List<NetworkNode> networkNodes = await nodeRepo.GetNetworkNodes(pubkx, remoteIpAddress.ToString());
+                    //del any nodes with pubkx or ip, for decenterlization 1 pubk must be on a ip and 1 ip with 1 pubk
+                    bool deleted=await nodeRepo.DeleteNetworkNode(networkNodes);
+
+                    return Ok(deleted);
+                }
+                else
+                {
+                    return StatusCode(400, "verify signature fail");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+                return StatusCode(500);
+            }
+        }
+
         [HttpGet("GetNodes")]
-        public async Task<IActionResult> GetNodes(bool tp = false)
+        public async Task<IActionResult> GetNodes(bool tp = true)
         {
             try
             {
@@ -129,6 +173,37 @@ namespace EKoin.Controllers
                 logger.Error(ex);
                 return StatusCode(500);
             }
+        }
+
+        [HttpGet("MaxTID")]
+        public async Task<IActionResult> MaxTID()
+        {
+            try
+            {
+                if (!memoryCache.TryGetValue("max_tid", out Int64 maxTid))
+                {
+                    MemoryCacheEntryOptions cacheEntryOptions = new MemoryCacheEntryOptions()
+                    {
+                        AbsoluteExpiration = null,
+                        Priority = CacheItemPriority.High
+                    };
+                    maxTid = await ledgerRepo.GetMaxTID();
+                    memoryCache.Set("max_tid", maxTid, cacheEntryOptions);
+                }
+
+                return Ok(maxTid);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+                return StatusCode(500);
+            }
+        }
+
+        [HttpGet("Sync")]
+        public async Task<IActionResult> Sync(Int64 fromLedgerId)
+        {
+            return Ok();
         }
 
     }

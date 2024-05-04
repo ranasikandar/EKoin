@@ -1,5 +1,7 @@
-﻿using Library;
+﻿using EKoin.Utility;
+using Library;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using NBitcoin;
 using NBitcoin.Crypto;
 using NLog;
@@ -16,10 +18,13 @@ namespace EKoin.Controllers
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
         private readonly ILibraryWallet libraryWallet;
         private readonly IMySettings mySettings;
-        public WalletController(ILibraryWallet _libraryWallet, IMySettings _mySettings)
+        private readonly IMemoryCache memoryCache;
+
+        public WalletController(ILibraryWallet _libraryWallet, IMySettings _mySettings, IMemoryCache _memoryCache)
         {
             libraryWallet = _libraryWallet;
             mySettings = _mySettings;
+            memoryCache = _memoryCache;
         }
 
         [HttpGet("New")]
@@ -188,8 +193,16 @@ namespace EKoin.Controllers
         {
             try
             {
-                Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), data);
+                Signature_Data_Hash signature_D_Hash=new Signature_Data_Hash();
 
+                if (memoryCache.TryGetValue("myPrivateKey", out object value))
+                {
+                    signature_D_Hash = libraryWallet.SignData(value as Key, data);
+                }
+                else
+                {
+                    signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), data);
+                }
                 return Ok(signature_D_Hash);
             }
             catch (Exception ex)

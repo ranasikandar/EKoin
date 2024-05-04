@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Caching.Memory;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,6 +10,12 @@ namespace Library
 {
     public class MySettings : IMySettings
     {
+        private readonly IMemoryCache memoryCache;
+        public MySettings(IMemoryCache _memoryCache)
+        {
+            memoryCache = _memoryCache;
+        }
+        
         public bool SetValue(string[] key, string[] value, string fileName)
         {
             try
@@ -45,6 +52,11 @@ namespace Library
                     string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
 
                     File.WriteAllText(appSettingsJsonFilePath, output);
+
+                    for (int i = 0; i < key.Length; i++)
+                    {
+                        GetSetCache(key[i], value[i]);
+                    }
                 }
                 else
                 {
@@ -65,13 +77,24 @@ namespace Library
         {
             try
             {
-                string appSettingsJsonFilePath = System.IO.Path.Combine(System.AppContext.BaseDirectory, fileName);
+                if (!memoryCache.TryGetValue(key, out string value))
+                {
+                    string appSettingsJsonFilePath = System.IO.Path.Combine(System.AppContext.BaseDirectory, fileName);
 
-                var json = File.ReadAllText(appSettingsJsonFilePath);
-                dynamic jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(json);
+                    var json = File.ReadAllText(appSettingsJsonFilePath);
+                    dynamic jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(json);
 
-                return jsonObj[key].Value;
+                    value = jsonObj[key].Value;
 
+                    MemoryCacheEntryOptions cacheEntryOptions = new MemoryCacheEntryOptions()
+                    {
+                        AbsoluteExpiration = null,
+                        Priority = CacheItemPriority.High
+                    };
+
+                    memoryCache.Set(key, value,cacheEntryOptions);
+                }
+                return value;
             }
             catch (Exception ex)
             {
@@ -80,24 +103,51 @@ namespace Library
 
         }
 
+        public string GetSetCache(string key, string value)
+        {
+            if (!memoryCache.TryGetValue(key, out string _value))
+            {
+                MemoryCacheEntryOptions cacheEntryOptions = new MemoryCacheEntryOptions()
+                {
+                    AbsoluteExpiration = null,
+                    Priority = CacheItemPriority.High
+                };
+
+                memoryCache.Set(key, value, cacheEntryOptions);
+            }
+            return _value;
+        }
+
+        public object GetSetCache(string key, object value)
+        {
+            if (!memoryCache.TryGetValue(key, out object _value))
+            {
+                MemoryCacheEntryOptions cacheEntryOptions = new MemoryCacheEntryOptions()
+                {
+                    AbsoluteExpiration = null,
+                    Priority = CacheItemPriority.High
+                };
+
+                memoryCache.Set(key, value, cacheEntryOptions);
+            }
+            return _value;
+        }
+
+        public T GetSetCache<T>(string key, T value)
+        {
+            if (!memoryCache.TryGetValue(key, out T _value))
+            {
+                MemoryCacheEntryOptions cacheEntryOptions = new MemoryCacheEntryOptions()
+                {
+                    AbsoluteExpiration = null,
+                    Priority = CacheItemPriority.High
+                };
+
+                memoryCache.Set(key, value, cacheEntryOptions);
+            }
+            return _value;
+        }
 
     }
 
-    //public static class AppSettings
-    //{
-    //    private static void LoadSettings
-    //    {
-    //        // This is where you would call the DB and populate the cache
-    //    }
-
-    //    public static string AppName
-    //    {
-    //        get
-    //        {
-    //            if (Cache["appname"] == null)
-    //                LoadSettings();
-    //            return Cache["appname"];
-    //        }
-    //    }
-    //}
 }

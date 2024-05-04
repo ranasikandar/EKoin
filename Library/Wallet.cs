@@ -235,6 +235,7 @@ namespace Library
             }
         }
 
+
         public uint256 GenSHA256Hash(string @data)
         {
             try

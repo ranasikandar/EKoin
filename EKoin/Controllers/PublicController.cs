@@ -1,5 +1,7 @@
 ﻿using Library;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using NBitcoin;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -18,11 +20,13 @@ namespace EKoin.Controllers
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
         private readonly ILibraryWallet libraryWallet;
         private readonly IMySettings mySettings;
+        private readonly IMemoryCache memoryCache;
 
-        public PublicController(ILibraryWallet _libraryWallet, IMySettings _mySettings)
+        public PublicController(ILibraryWallet _libraryWallet, IMySettings _mySettings, IMemoryCache _memoryCache)
         {
             libraryWallet = _libraryWallet;
             mySettings = _mySettings;
+            memoryCache = _memoryCache;
         }
 
 
@@ -33,8 +37,8 @@ namespace EKoin.Controllers
         }
 
         //is this node transaction pool
-        [HttpGet("RuTP")]
-        public IActionResult RuTP()
+        [HttpGet("Role")]
+        public IActionResult Role()
         {
             return Ok(0);
         }
@@ -103,21 +107,5 @@ namespace EKoin.Controllers
 
         }
 
-        [HttpPost("SignData")]
-        public IActionResult SignData(string @data)
-        {
-            try
-            {
-                Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), data);
-
-                return Ok(signature_D_Hash);
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex.Message);
-                return StatusCode(500);
-            }
-
-        }
     }
 }
