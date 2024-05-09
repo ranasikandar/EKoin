@@ -16,6 +16,8 @@ namespace EKoin.Controllers
     [RestrictToLocalhost]
     public class SettingsController : ControllerBase
     {
+        #region ctor
+
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
         private readonly INodeRepo nodeRepo;
         private readonly ILibraryWallet libraryWallet;
@@ -24,6 +26,8 @@ namespace EKoin.Controllers
             nodeRepo = _nodeRepo;
             libraryWallet = _libraryWallet;
         }
+
+        #endregion
 
         [HttpGet("GetNodes")]
         public async Task<IActionResult> GetNodes(int Id_Local, bool? isTP)

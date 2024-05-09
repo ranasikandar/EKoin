@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Models;
 
 namespace Models.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240507195247_updTblLedgerPrecision13_6")]
+    partial class updTblLedgerPrecision13_6
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -27,8 +29,8 @@ namespace Models.Migrations
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.None);
 
                     b.Property<decimal>("Amount")
-                        .HasPrecision(16, 8)
-                        .HasColumnType("decimal(16,8)");
+                        .HasPrecision(13, 6)
+                        .HasColumnType("decimal(13,6)");
 
                     b.Property<string>("Hash")
                         .IsRequired()

@@ -15,31 +15,44 @@ namespace Models.DB
             context = _context;
         }
 
-        public async Task<Int64> GetMaxTID()
+        public async Task<ulong> GetMaxTID()
         {
-            return await context.Ledger.MaxAsync(x => x.TID);
+            //var maxValue = await context.Ledger
+            //              .DefaultIfEmpty(new Ledger { TID = default }) // Set a default value for your entity type
+            //              .Select(Ledger => Ledger.TID)
+            //              .MaxAsync();
+
+            try
+            {
+                return await context.Ledger.DefaultIfEmpty().MaxAsync(x => x.TID);
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
         }
 
-        public async Task<List<Ledger>> GetLedger(Int64 fromTID,Int32 take)
+        public async Task<List<Ledger>> GetLedger(ulong fromTID,Int32 take)
         {
             return await context.Ledger.Where(x => x.TID>=fromTID).OrderBy(x => x.TID).Take(take).ToListAsync();
         }
 
-        public async Task<Ledger> AddUpdateLedger(Ledger LedgerChanges)
+        public async Task<Ledger> UpdateLedger(Ledger LedgerChanges)
         {
-            //chk wather update or add new
-            if (LedgerChanges.TID > 0)
-            {
-                var couple = context.Ledger.Attach(LedgerChanges);
-                couple.State = EntityState.Modified;
-            }
-            else
-            {
-                context.Ledger.Add(LedgerChanges);
-            }
+            var entity = context.Ledger.Attach(LedgerChanges);
+            entity.State = EntityState.Modified;
 
             await context.SaveChangesAsync();
             return LedgerChanges;
+
+        }
+
+        public async Task<Ledger> AddLedger(Ledger ledger)
+        {
+            context.Ledger.Add(ledger);
+
+            await context.SaveChangesAsync();
+            return ledger;
 
         }
 

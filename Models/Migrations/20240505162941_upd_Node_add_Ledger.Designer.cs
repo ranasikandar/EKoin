@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Models;
 
 namespace Models.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240505162941_upd_Node_add_Ledger")]
+    partial class upd_Node_add_Ledger
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,14 +23,9 @@ namespace Models.Migrations
 
             modelBuilder.Entity("Models.Ledger", b =>
                 {
-                    b.Property<long>("TID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.None);
-
                     b.Property<decimal>("Amount")
-                        .HasPrecision(16, 8)
-                        .HasColumnType("decimal(16,8)");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Hash")
                         .IsRequired()
@@ -46,22 +43,23 @@ namespace Models.Migrations
 
                     b.Property<string>("Reciver")
                         .IsRequired()
-                        .HasMaxLength(34)
-                        .HasColumnType("varchar(34)");
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
 
                     b.Property<string>("Sender")
                         .IsRequired()
-                        .HasMaxLength(34)
-                        .HasColumnType("varchar(34)");
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
 
                     b.Property<byte[]>("Signature")
                         .IsRequired()
                         .HasColumnType("varbinary(128)");
 
+                    b.Property<long>("TID")
+                        .HasColumnType("bigint");
+
                     b.Property<DateTime>("TransactionTime")
                         .HasColumnType("datetime2");
-
-                    b.HasKey("TID");
 
                     b.ToTable("Ledger");
                 });

@@ -17,11 +17,13 @@ namespace Models
         [Required]
         [DataType(DataType.Text)]
         [MaxLength(66)]
+        [Column(TypeName = "varchar(66)")]
         public string Pubkx { get; set; }
 
         [Required]
         [DataType(DataType.Text)]
         [MaxLength(15)]//127.000.000.100
+        [Column(TypeName = "varchar(15)")]
         public string IP { get; set; }
 
         [Required]

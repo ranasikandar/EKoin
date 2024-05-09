@@ -8,9 +8,10 @@ namespace Models.DB
 {
     public interface ILedgerRepo
     {
-        Task<Int64> GetMaxTID();
-        Task<List<Ledger>> GetLedger(Int64 fromTID, Int32 take);
-        Task<Ledger> AddUpdateLedger(Ledger LedgerChanges);
+        Task<ulong> GetMaxTID();
+        Task<List<Ledger>> GetLedger(ulong fromTID, Int32 take=500);
+        Task<Ledger> AddLedger(Ledger LedgerChanges);
+        Task<Ledger> UpdateLedger(Ledger LedgerChanges);
         Task<bool> DeleteLedger(List<Ledger> ledger);
     }
 }

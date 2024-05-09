@@ -21,6 +21,8 @@ namespace EKoin.Controllers
 
     public class NetworkController : ControllerBase
     {
+        #region ctor
+
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
         private readonly INodeRepo nodeRepo;
         private readonly ILibraryWallet libraryWallet;
@@ -36,6 +38,7 @@ namespace EKoin.Controllers
             memoryCache = _memoryCache;
         }
 
+        #endregion
 
         [HttpPost("RememberMe")]
         public async Task<IActionResult> RememberMe(string pubkx, string derSign, bool isTP = true)
@@ -180,15 +183,10 @@ namespace EKoin.Controllers
         {
             try
             {
-                if (!memoryCache.TryGetValue("max_tid", out Int64 maxTid))
+                if (!memoryCache.TryGetValue("max_tid", out ulong maxTid))
                 {
-                    MemoryCacheEntryOptions cacheEntryOptions = new MemoryCacheEntryOptions()
-                    {
-                        AbsoluteExpiration = null,
-                        Priority = CacheItemPriority.High
-                    };
                     maxTid = await ledgerRepo.GetMaxTID();
-                    memoryCache.Set("max_tid", maxTid, cacheEntryOptions);
+                    maxTid =mySettings.GetSetCache("max_tid", maxTid);
                 }
 
                 return Ok(maxTid);
@@ -201,8 +199,9 @@ namespace EKoin.Controllers
         }
 
         [HttpGet("Sync")]
-        public async Task<IActionResult> Sync(Int64 fromLedgerId)
+        public async Task<IActionResult> Sync(ulong fromLedgerId)
         {
+            List<Ledger> ledgerlist = await ledgerRepo.GetLedger(fromLedgerId);
             return Ok();
         }
 

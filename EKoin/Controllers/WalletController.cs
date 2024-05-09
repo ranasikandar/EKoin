@@ -2,10 +2,15 @@
 using Library;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Models;
+using Models.DB;
+using Models.VModels;
 using NBitcoin;
 using NBitcoin.Crypto;
 using NLog;
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using static Models.Wallet;
 
 namespace EKoin.Controllers
@@ -15,17 +20,24 @@ namespace EKoin.Controllers
     [RestrictToLocalhost]
     public class WalletController : ControllerBase
     {
+        #region ctor
+
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
         private readonly ILibraryWallet libraryWallet;
         private readonly IMySettings mySettings;
         private readonly IMemoryCache memoryCache;
 
-        public WalletController(ILibraryWallet _libraryWallet, IMySettings _mySettings, IMemoryCache _memoryCache)
+        private readonly ILedgerRepo ledgerRepo;
+
+        public WalletController(ILibraryWallet _libraryWallet, IMySettings _mySettings, IMemoryCache _memoryCache,ILedgerRepo _ledgerRepo)
         {
             libraryWallet = _libraryWallet;
             mySettings = _mySettings;
             memoryCache = _memoryCache;
+            ledgerRepo = _ledgerRepo;
         }
+
+        #endregion
 
         [HttpGet("New")]
         public IActionResult New()
@@ -187,7 +199,6 @@ namespace EKoin.Controllers
 
         }
 
-
         [HttpPost("SignMyData")]
         public IActionResult SignMyData(string @data)
         {
@@ -195,7 +206,7 @@ namespace EKoin.Controllers
             {
                 Signature_Data_Hash signature_D_Hash=new Signature_Data_Hash();
 
-                if (memoryCache.TryGetValue("myPrivateKey", out object value))
+                if (memoryCache.TryGetValue("myPrivateKey", out Key value))
                 {
                     signature_D_Hash = libraryWallet.SignData(value as Key, data);
                 }
@@ -204,6 +215,64 @@ namespace EKoin.Controllers
                     signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), data);
                 }
                 return Ok(signature_D_Hash);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex.Message);
+                return StatusCode(500);
+            }
+
+        }
+
+        [HttpPost("SendCoin")]//submit transaction, init transaction
+        public async Task<IActionResult> SendCoin(SendCoin sendCoin)
+        {
+            string address;
+
+            try
+            {
+                BitcoinAddress _address= BitcoinAddress.Create(sendCoin.Reciver, Network.Main);
+                address = _address.ToString();
+            }
+            catch (Exception)
+            {
+                address = sendCoin.Reciver;
+                //return StatusCode(500,"Invalid Address:"+ex.Message);
+            }
+
+            try
+            {
+                Ledger ledger = new Ledger
+                {
+                    TID = await ledgerRepo.GetMaxTID() + 1,
+                    LHash = Library.Utility.GetMd5Hash(Guid.NewGuid().ToString()),
+                    Sender = mySettings.GetValue("my_addr", "myWallet.json"),
+                    Reciver = address,
+                    Amount=sendCoin.Amount,
+                    Memo=sendCoin.Memo,
+                    TransactionTime=DateTime.UtcNow,
+                    
+                };
+
+                Signature_Data_Hash signature_D_Hash = new Signature_Data_Hash();
+
+                if (memoryCache.TryGetValue("myPrivateKey", out Key value))
+                {
+                    signature_D_Hash = libraryWallet.SignData(value as Key, Library.Utility.TtoByteArray(ledger));
+                }
+                else
+                {
+                    signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), Library.Utility.TtoByteArray(ledger));
+                }
+
+                ledger.Signature = signature_D_Hash.DerSign;
+                ledger.Hash = Library.Utility.GetMd5Hash(ledger);
+
+                ledger=await ledgerRepo.AddLedger(ledger);
+
+                List<Ledger> x = await ledgerRepo.GetLedger(1);
+
+                return Ok(ledger);
             }
             catch (Exception ex)
             {

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Library
@@ -78,6 +80,51 @@ namespace Library
 
         //    return Serializer.Deserialize<T>(stream);
         //}
+
+        public static string GetMd5HashX(object obj)
+        {
+            using (var md5 = MD5.Create())
+            {
+                BinaryFormatter serializer = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                using (var memoryStream = new MemoryStream())
+                {
+#pragma warning disable SYSLIB0011 // Type or member is obsolete
+                    serializer.Serialize(memoryStream, obj);
+#pragma warning restore SYSLIB0011 // Type or member is obsolete
+                    return Convert.ToHexString(md5.ComputeHash(memoryStream.ToArray()));
+                }
+            }
+        }
+
+        public static string GetMd5Hash<T>(T t)
+        {
+            using (var md5 = MD5.Create())
+            {
+                var jsonString = JsonSerializer.Serialize(t);
+                return Convert.ToHexString(md5.ComputeHash(Encoding.UTF8.GetBytes(jsonString)));
+            }
+        }
+
+        public static byte[] TtoByteArray<T>(T t)
+        {
+            string jsonString = JsonSerializer.Serialize(t);
+            return Encoding.UTF8.GetBytes(jsonString);
+        }
+
+        public static string GetMd5HashReflective(object obj)
+        {
+            using (var md5 = MD5.Create())
+            {
+                var properties = obj.GetType().GetProperties();
+                StringBuilder sb = new StringBuilder();
+                foreach (var property in properties)
+                {
+                    sb.Append(property.GetValue(obj));
+                }
+                return Convert.ToHexString(md5.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString())));
+            }
+        }
+
 
     }
 }

@@ -114,8 +114,12 @@ namespace Library
                 };
 
                 memoryCache.Set(key, value, cacheEntryOptions);
+                return value;
             }
-            return _value;
+            else
+            {
+                return _value;
+            }
         }
 
         public object GetSetCache(string key, object value)
@@ -128,9 +132,13 @@ namespace Library
                     Priority = CacheItemPriority.High
                 };
 
-                memoryCache.Set(key, value, cacheEntryOptions);
+                memoryCache.Set(key, value, cacheEntryOptions); 
+                return value;
             }
-            return _value;
+            else
+            {
+                return _value;
+            }
         }
 
         public T GetSetCache<T>(string key, T value)
@@ -144,8 +152,13 @@ namespace Library
                 };
 
                 memoryCache.Set(key, value, cacheEntryOptions);
+                return value;
             }
-            return _value;
+            else
+            {
+                return _value;
+            }
+            
         }
 
     }

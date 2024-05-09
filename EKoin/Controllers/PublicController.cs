@@ -17,6 +17,8 @@ namespace EKoin.Controllers
 
     public class PublicController : ControllerBase
     {
+        #region ctor
+
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
         private readonly ILibraryWallet libraryWallet;
         private readonly IMySettings mySettings;
@@ -29,6 +31,7 @@ namespace EKoin.Controllers
             memoryCache = _memoryCache;
         }
 
+        #endregion
 
         [HttpGet("Hi")]
         public IActionResult Hi()
