@@ -1,4 +1,5 @@
-﻿using NBitcoin;
+﻿using Models.Network;
+using NBitcoin;
 using NBitcoin.Crypto;
 using System;
 using System.Collections.Generic;
@@ -19,5 +20,7 @@ namespace Library
         Signature_Data_Hash SignData(Key key, byte[] data);
         bool VerifyData(PubKey pubKey, uint256 messageHash, ECDSASignature signature);
         uint256 GenSHA256Hash(string @data);
+        bool ValidateSubmitedTransaction(SubmitTransaction submitTransaction, double TransactionTimePeriodMSec);
+        bool isTransactionTimePeriodValid(DateTime dateTime, double transactionTimePeriodMSec);
     }
 }

@@ -1,4 +1,5 @@
-﻿using NBitcoin;
+﻿using Models.Network;
+using NBitcoin;
 using NBitcoin.Crypto;
 using System;
 using System.Collections.Generic;
@@ -253,5 +254,56 @@ namespace Library
                 return null;
             }
         }
+
+        public bool ValidateSubmitedTransaction(SubmitTransaction submitTransaction,double TransactionTimePeriodMSec)
+        {
+            try
+            {
+                if (isTransactionTimePeriodValid(submitTransaction.TransactionInitTime, TransactionTimePeriodMSec))
+                {
+                    //check signature
+                    byte[] signedData = Library.Utility.TtoByteArray(new { submitTransaction.Reciver, submitTransaction.Amount, submitTransaction.Memo, submitTransaction.TransactionInitTime });
+                    PubKey senderPubK = new PubKey(submitTransaction.SenderPubkx);
+                    uint256 dataHash = Hashes.DoubleSHA256(signedData);
+                    ECDSASignature eCDSASignature = new ECDSASignature(Convert.FromBase64String(submitTransaction.DerSign));
+
+                    if (VerifyData(senderPubK, dataHash, eCDSASignature))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+
+            return false;
+        }
+
+        public bool isTransactionTimePeriodValid(DateTime dateTime, double transactionTimePeriodMSec)
+        {
+            try
+            {
+                double diffMSec = (DateTime.UtcNow - dateTime).TotalMilliseconds;
+
+                if (diffMSec > 0)
+                {
+                    if (diffMSec < transactionTimePeriodMSec)
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+            return false;
+        }
+
+
     }
 }

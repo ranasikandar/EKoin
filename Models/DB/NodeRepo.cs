@@ -79,8 +79,8 @@ namespace Models.DB
             //chk wather update or add new
             if (NetworkNodeChanges.Id_Local > 0)
             {
-                var couple = context.NetworkNodes.Attach(NetworkNodeChanges);
-                couple.State = EntityState.Modified;
+                var entity = context.NetworkNodes.Attach(NetworkNodeChanges);
+                entity.State = EntityState.Modified;
             }
             else
             {

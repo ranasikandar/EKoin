@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace Models
 {
-    public class NetworkNodeVM
+    public class NetworkNodeM
     {
-        public NetworkNodeVM()
+        public NetworkNodeM()
         {
             Nodes = new();
         }

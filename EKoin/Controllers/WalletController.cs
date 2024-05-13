@@ -2,14 +2,18 @@
 using Library;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Models;
 using Models.DB;
+using Models.Network;
 using Models.VModels;
+using Models.VModels.Wallet;
 using NBitcoin;
 using NBitcoin.Crypto;
 using NLog;
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using static Models.Wallet;
 
@@ -26,15 +30,18 @@ namespace EKoin.Controllers
         private readonly ILibraryWallet libraryWallet;
         private readonly IMySettings mySettings;
         private readonly IMemoryCache memoryCache;
-
         private readonly ILedgerRepo ledgerRepo;
-
-        public WalletController(ILibraryWallet _libraryWallet, IMySettings _mySettings, IMemoryCache _memoryCache,ILedgerRepo _ledgerRepo)
+        private readonly IConfiguration configuration;
+        private readonly IHttpClientFactory httpClient;
+        public WalletController(ILibraryWallet _libraryWallet, IMySettings _mySettings, IMemoryCache _memoryCache,ILedgerRepo _ledgerRepo
+            , IConfiguration _configuration, IHttpClientFactory _httpClient)
         {
             libraryWallet = _libraryWallet;
             mySettings = _mySettings;
             memoryCache = _memoryCache;
             ledgerRepo = _ledgerRepo;
+            configuration = _configuration;
+            httpClient = _httpClient;
         }
 
         #endregion
@@ -87,11 +94,11 @@ namespace EKoin.Controllers
         }
 
         [HttpPost("Genrate")]
-        public IActionResult Genrate(string Mnemonic12Words)
+        public IActionResult Genrate(Mnemonic12Words model)
         {
             try
             {
-                Key_Pair wallet = libraryWallet.GenPubPkFromMnemonic(Mnemonic12Words);
+                Key_Pair wallet = libraryWallet.GenPubPkFromMnemonic(model.mnemonic12Words);
                 return Ok(new { pkx = wallet.PrivateKey_Hex, pubx = wallet.PublicKey_Hex, addr = wallet.Address_String, mnem = wallet.Mnemonic_12_Words });
             }
             catch (Exception ex)
@@ -103,11 +110,11 @@ namespace EKoin.Controllers
         }
 
         [HttpPost("OverWrite")]
-        public IActionResult OverWrite(string Mnemonic12Words)
+        public IActionResult OverWrite(Mnemonic12Words model)
         {
             try
             {
-                Key_Pair wallet = libraryWallet.GenPubPkFromMnemonic(Mnemonic12Words);
+                Key_Pair wallet = libraryWallet.GenPubPkFromMnemonic(model.mnemonic12Words);
 
                 mySettings.SetValue(new string[] { "my_pkx", "my_pubx", "my_addr", "my_mnem" }
                 , new string[] { wallet.PrivateKey_Hex, wallet.PublicKey_Hex, wallet.Address_String, wallet.Mnemonic_12_Words }, "myWallet.json");
@@ -123,11 +130,11 @@ namespace EKoin.Controllers
         }
 
         [HttpPost("SignData")]
-        public IActionResult SignData(bool isBase58OtherwiseHEX, string privateKey, string @data)
+        public IActionResult SignData(SignData model)
         {
             try
             {
-                Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(isBase58OtherwiseHEX, privateKey, data);
+                Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(model.isBase58OtherwiseHEX, model.privateKey, model.data);
 
                 return Ok(signature_D_Hash);
             }
@@ -140,13 +147,13 @@ namespace EKoin.Controllers
         }
 
         [HttpPost("VerifyData")]
-        public IActionResult VerifyData(string pubx, string dHash, string derSign)
+        public IActionResult VerifyData(VerifyData model)
         {
             try
             {
-                PubKey pubKey = new PubKey(pubx);
-                NBitcoin.uint256 uint_256 = new uint256(Convert.FromBase64String(dHash));
-                ECDSASignature eCDSASignature = new ECDSASignature(Convert.FromBase64String(derSign));
+                PubKey pubKey = new PubKey(model.pubx);
+                NBitcoin.uint256 uint_256 = new uint256(Convert.FromBase64String(model.dHash));
+                ECDSASignature eCDSASignature = new ECDSASignature(Convert.FromBase64String(model.derSign));
 
                 bool verdata = libraryWallet.VerifyData(pubKey, uint_256, eCDSASignature);
                 return Ok(verdata);
@@ -160,18 +167,18 @@ namespace EKoin.Controllers
         }
 
         [HttpPost("VerifyDataSignature")]
-        public IActionResult VerifyDataSignature(string @data, string derSign)
+        public IActionResult VerifyDataSignature(VerifyDataSignature model)
         {
             try
             {
                 PubKey pubKey = new PubKey(mySettings.GetValue("my_pubx", "myWallet.json"));
                 
                 // Convert the message to a byte array
-                byte[] messageBytes = System.Text.Encoding.UTF8.GetBytes(@data);
+                byte[] messageBytes = System.Text.Encoding.UTF8.GetBytes(model.data);
                 // Compute the hash of the message
                 uint256 uint_256 = Hashes.DoubleSHA256(messageBytes);
 
-                ECDSASignature eCDSASignature = new ECDSASignature(Convert.FromBase64String(derSign));
+                ECDSASignature eCDSASignature = new ECDSASignature(Convert.FromBase64String(model.derSign));
 
                 bool verdata = libraryWallet.VerifyData(pubKey, uint_256, eCDSASignature);
                 return Ok(verdata);
@@ -185,11 +192,11 @@ namespace EKoin.Controllers
         }
 
         [HttpPost("GenSHA256Hash")]
-        public IActionResult GenSHA256Hash(string @data)
+        public IActionResult GenSHA256Hash(GenSHA256Hash model)
         {
             try
             {
-                return Ok(libraryWallet.GenSHA256Hash(@data).ToBytes(true));
+                return Ok(libraryWallet.GenSHA256Hash(model.data).ToBytes(true));
             }
             catch (Exception ex)
             {
@@ -200,7 +207,7 @@ namespace EKoin.Controllers
         }
 
         [HttpPost("SignMyData")]
-        public IActionResult SignMyData(string @data)
+        public IActionResult SignMyData(SignMyData model)
         {
             try
             {
@@ -208,11 +215,11 @@ namespace EKoin.Controllers
 
                 if (memoryCache.TryGetValue("myPrivateKey", out Key value))
                 {
-                    signature_D_Hash = libraryWallet.SignData(value as Key, data);
+                    signature_D_Hash = libraryWallet.SignData(value as Key, model.data);
                 }
                 else
                 {
-                    signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), data);
+                    signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), model.data);
                 }
                 return Ok(signature_D_Hash);
             }
@@ -227,58 +234,137 @@ namespace EKoin.Controllers
         [HttpPost("SendCoin")]//submit transaction, init transaction
         public async Task<IActionResult> SendCoin(SendCoin sendCoin)
         {
-            string address;
+            //test
+
+            HttpRequest httpRequest = new HttpRequest(httpClient, configuration);
+            //"http://127.0.0.1:45997/Wallet/Genrate"
+
+            string _data = "023fe12030b0e899f290b017297a948f9dba6eac1295221b1585da097ea555fac5";
+            string _derSign = "MEQCIHeyLziXTBv60Q5gNBZ5gTJRuenbldJg9hgro0L/UWi7AiBgnXcM52bPlGl3HIbSfFJECE/Uh63WDXK6tTELdEToaA==";
+            var requestBody = $"{{ \"data\": \"{_data}\", \"derSign\": \"{_derSign}\" }}";
+            //StringContent content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
+            //await httpRequest.PostData(content, "http://127.0.0.1:45997/Wallet/VerifyDataSignature");
+
+            VerifyDataSignature modal = new VerifyDataSignature() { data = _data, derSign = _derSign };
+            await httpRequest.PostData(modal, "http://127.0.0.1:45997/Wallet/VerifyDataSignature");
+
+            SendCoin sendCoin1 = new SendCoin();
+            sendCoin1.Reciver = "1DMijhSj7gAxYpe5MSXAbJ6geTZ1owa9jz";
+            sendCoin1.Amount = 0.001M;
+            sendCoin1.Memo = "hello world";
+            await httpRequest.PostData(sendCoin1, "http://127.0.0.1:45997/Wallet/SendCoin");
+
+            //test
+
+            string recAddress;
 
             try
             {
-                BitcoinAddress _address= BitcoinAddress.Create(sendCoin.Reciver, Network.Main);
-                address = _address.ToString();
+                BitcoinAddress _address = BitcoinAddress.Create(sendCoin.Reciver, Network.Main);
+                recAddress = _address.ToString();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                address = sendCoin.Reciver;
-                //return StatusCode(500,"Invalid Address:"+ex.Message);
+                return StatusCode(500,"Invalid Address:"+ex.Message);
             }
 
             try
             {
-                Ledger ledger = new Ledger
-                {
-                    TID = await ledgerRepo.GetMaxTID() + 1,
-                    LHash = Library.Utility.GetMd5Hash(Guid.NewGuid().ToString()),
-                    Sender = mySettings.GetValue("my_addr", "myWallet.json"),
-                    Reciver = address,
-                    Amount=sendCoin.Amount,
-                    Memo=sendCoin.Memo,
-                    TransactionTime=DateTime.UtcNow,
-                    
-                };
+                SubmitTransaction submitTransaction = new();
+                submitTransaction.Reciver = recAddress;
+                submitTransaction.Amount = sendCoin.Amount;
+                submitTransaction.Memo = sendCoin.Memo;
+                submitTransaction.SenderPubkx = mySettings.GetValue("my_pubx", "myWallet.json");
+                submitTransaction.TransactionInitTime = DateTime.UtcNow;
+
+                byte[] dataToBeSigned = Library.Utility.TtoByteArray(new { submitTransaction.Reciver, submitTransaction.Amount, submitTransaction.Memo, submitTransaction.TransactionInitTime });
 
                 Signature_Data_Hash signature_D_Hash = new Signature_Data_Hash();
 
                 if (memoryCache.TryGetValue("myPrivateKey", out Key value))
                 {
-                    signature_D_Hash = libraryWallet.SignData(value as Key, Library.Utility.TtoByteArray(ledger));
+                    signature_D_Hash = libraryWallet.SignData(value as Key, dataToBeSigned);
                 }
                 else
                 {
-                    signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), Library.Utility.TtoByteArray(ledger));
+                    signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), dataToBeSigned);
                 }
 
-                ledger.Signature = signature_D_Hash.DerSign;
-                ledger.Hash = Library.Utility.GetMd5Hash(ledger);
+                submitTransaction.DerSign = Convert.ToBase64String(signature_D_Hash.DerSign);
 
-                ledger=await ledgerRepo.AddLedger(ledger);
+                //test
+                bool validateData = libraryWallet.ValidateSubmitedTransaction(submitTransaction, Convert.ToDouble(configuration["TransactionTimePeriodMSec"]));
+                if (validateData)
+                {
+                    return Ok(submitTransaction);
+                }
+                else
+                {
+                    return StatusCode(500,submitTransaction);
+                }
+                //test
 
-                List<Ledger> x = await ledgerRepo.GetLedger(1);
+                //TODO propogate to TP, wait for response from tp, if tp respond with 200 and tid, send tid
 
-                return Ok(ledger);
             }
             catch (Exception ex)
             {
                 logger.Error(ex.Message);
                 return StatusCode(500);
             }
+
+            ////test
+            //string address;
+
+            //try
+            //{
+            //    BitcoinAddress _address= BitcoinAddress.Create(sendCoin.Reciver, Network.Main);
+            //    address = _address.ToString();
+            //}
+            //catch (Exception)
+            //{
+            //    address = sendCoin.Reciver;
+            //    //return StatusCode(500,"Invalid Address:"+ex.Message);
+            //}
+
+            //try
+            //{
+            //    Ledger ledger = new Ledger
+            //    {
+            //        TID = await ledgerRepo.GetMaxTID() + 1,
+            //        LHash = Library.Utility.GetMd5Hash(Guid.NewGuid().ToString()),
+            //        Sender = mySettings.GetValue("my_addr", "myWallet.json"),
+            //        Reciver = address,
+            //        Amount=sendCoin.Amount,
+            //        Memo=sendCoin.Memo,
+            //        TransactionTime=DateTime.UtcNow,
+
+            //    };
+
+            //    Signature_Data_Hash signature_D_Hash = new Signature_Data_Hash();
+
+            //    if (memoryCache.TryGetValue("myPrivateKey", out Key value))
+            //    {
+            //        signature_D_Hash = libraryWallet.SignData(value as Key, Library.Utility.TtoByteArray(ledger));
+            //    }
+            //    else
+            //    {
+            //        signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), Library.Utility.TtoByteArray(ledger));
+            //    }
+
+            //    ledger.Signature = signature_D_Hash.DerSign;
+            //    ledger.Hash = Library.Utility.GetMd5Hash(ledger);
+
+            //    ledger=await ledgerRepo.AddLedger(ledger);
+
+            //    return Ok(ledger);
+            //}
+            //catch (Exception ex)
+            //{
+            //    logger.Error(ex.Message);
+            //    return StatusCode(500);
+            //}
+            ////test
 
         }
 

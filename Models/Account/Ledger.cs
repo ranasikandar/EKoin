@@ -36,7 +36,7 @@ namespace Models
 
         [Required]
         [DataType(DataType.Currency)]
-        public decimal Amount { get; set; }
+        public decimal Amount { get; set; }//0.00000001-99999999
 
         [DataType(DataType.Text)]
         [MaxLength(64)]

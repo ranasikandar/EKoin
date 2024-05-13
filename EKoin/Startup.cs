@@ -12,6 +12,7 @@ using Models.DB;
 using NLog;
 using System;
 using System.IO;
+using System.Net.Http;
 using static Models.Wallet;
 
 namespace EKoin
@@ -37,10 +38,12 @@ namespace EKoin
             services.AddDbContextPool<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("ConnectionString")));
             services.AddScoped<INodeRepo, NodeRepo>();
             services.AddScoped<ILedgerRepo, LedgerRepo>();
+            services.AddScoped<IBalanceRepo, BalanceRepo>();
 
             services.AddSingleton<ILibraryWallet, Library.Wallet>();
             services.AddSingleton<IMySettings, MySettings>();
-
+            //services.AddSingleton<IHttpClientFactory>();
+            services.AddHttpClient();
             services.AddHostedService<LoadingNodeService>();
             
             services.AddControllers();

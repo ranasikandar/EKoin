@@ -7,20 +7,11 @@ using System.Threading.Tasks;
 
 namespace Models.VModels
 {
-    public class SendCoin
+    public class AddressBalance
     {
         [Required]
         [DataType(DataType.Text)]
         [MaxLength(34)]
-        public string Reciver { get; set; }
-
-        [Required]
-        [DataType(DataType.Currency)]
-        public decimal Amount { get; set; }
-
-        [DataType(DataType.Text)]
-        [MaxLength(64)]
-        public string Memo { get; set; }
-
+        public string Address { get; set; }
     }
 }
