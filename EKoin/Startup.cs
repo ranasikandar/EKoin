@@ -1,4 +1,5 @@
 using EKoin.Services;
+using EKoin.Utility;
 using Library;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -44,6 +45,7 @@ namespace EKoin
             services.AddSingleton<IMySettings, MySettings>();
             //services.AddSingleton<IHttpClientFactory>();
             services.AddHttpClient();
+            services.AddSingleton<IHttpRequest, HttpRequest>();
             services.AddHostedService<LoadingNodeService>();
             
             services.AddControllers();

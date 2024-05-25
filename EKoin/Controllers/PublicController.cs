@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using static Models.Wallet;
 
@@ -33,8 +34,8 @@ namespace EKoin.Controllers
 
         #endregion
 
-        [HttpGet("Hi")]
-        public IActionResult Hi()
+        [HttpGet("/")]
+        public IActionResult Index()
         {
             return Ok(1);
         }
@@ -43,6 +44,7 @@ namespace EKoin.Controllers
         [HttpGet("Role")]
         public IActionResult Role()
         {
+            //0=node,1=TP
             return Ok(0);
         }
 
@@ -97,10 +99,16 @@ namespace EKoin.Controllers
             try
             {
                 string mypubkx = mySettings.GetValue("my_pubx", "myWallet.json");
+                
+                DateTime dateTime = DateTime.UtcNow;
+                int unixtime=dateTime.ToUnixTimestamp();
+                //dateTime = DateTimeOffset.FromUnixTimeSeconds(unixtime).DateTime;
 
-                Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), mypubkx);
+                byte[] dataBytes = Encoding.UTF8.GetBytes(mypubkx+unixtime);
 
-                return Ok(new { pubkx=mypubkx, DerSign=signature_D_Hash.DerSign});
+                Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), dataBytes);
+
+                return Ok(new { pubKx=mypubkx,dt=unixtime, derSign=Convert.ToBase64String(signature_D_Hash.DerSign) });
             }
             catch (Exception ex)
             {

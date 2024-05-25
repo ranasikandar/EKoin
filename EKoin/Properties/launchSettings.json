@@ -20,14 +20,14 @@
     },
     "EKoin": {
       "commandName": "Project",
-      "commandLineArgs": "--urls https://+:45997",
+      "commandLineArgs": "--urls http://+:45997",
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "https://127.0.0.1:45997"
+      "applicationUrl": "http://127.0.0.1:45997"
     }
   }
 }

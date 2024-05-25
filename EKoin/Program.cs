@@ -70,19 +70,19 @@ namespace EKoin
                 }
                 else
                 {
-                    webBuilder.UseStartup<Startup>()
-                    // Add UseKestrel to control it's options
-                    .UseKestrel(options =>
-                     {
-                         //// http:localhost:5000
-                         //options.Listen(IPAddress.Loopback, 5000);
-                         // https:*:45997
-                         ////todo get --urls http://+:45997 from args and use port
-                         options.Listen(IPAddress.Any, 45997, listenOptions =>
-                         {
-                             listenOptions.UseHttps(GetSelfSignedCertificate.GenCertificate());
-                         });
-                     });
+                    webBuilder.UseStartup<Startup>();
+                    //// Add UseKestrel to control it's options
+                    //.UseKestrel(options =>
+                    // {
+                    //     //// http:localhost:5000
+                    //     //options.Listen(IPAddress.Loopback, 5000);
+                    //     // https:*:45997
+                    //     ////todo get --urls http://+:45997 from args and use port
+                    //     options.Listen(IPAddress.Any, 45997, listenOptions =>
+                    //     {
+                    //         listenOptions.UseHttps(GetSelfSignedCertificate.GenCertificate());
+                    //     });
+                    // });
                 }
 
 

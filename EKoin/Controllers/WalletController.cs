@@ -14,6 +14,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using static Models.Wallet;
 
@@ -32,16 +33,17 @@ namespace EKoin.Controllers
         private readonly IMemoryCache memoryCache;
         private readonly ILedgerRepo ledgerRepo;
         private readonly IConfiguration configuration;
-        private readonly IHttpClientFactory httpClient;
+        private readonly IHttpRequest httpRequest;
+
         public WalletController(ILibraryWallet _libraryWallet, IMySettings _mySettings, IMemoryCache _memoryCache,ILedgerRepo _ledgerRepo
-            , IConfiguration _configuration, IHttpClientFactory _httpClient)
+            , IConfiguration _configuration, IHttpRequest _httpRequest)
         {
             libraryWallet = _libraryWallet;
             mySettings = _mySettings;
             memoryCache = _memoryCache;
             ledgerRepo = _ledgerRepo;
             configuration = _configuration;
-            httpClient = _httpClient;
+            httpRequest = _httpRequest;
         }
 
         #endregion
@@ -234,27 +236,28 @@ namespace EKoin.Controllers
         [HttpPost("SendCoin")]//submit transaction, init transaction
         public async Task<IActionResult> SendCoin(SendCoin sendCoin)
         {
-            //test
+            ////test
 
-            HttpRequest httpRequest = new HttpRequest(httpClient, configuration);
-            //"http://127.0.0.1:45997/Wallet/Genrate"
+            ////"http://127.0.0.1:45997/Wallet/Genrate"
 
-            string _data = "023fe12030b0e899f290b017297a948f9dba6eac1295221b1585da097ea555fac5";
-            string _derSign = "MEQCIHeyLziXTBv60Q5gNBZ5gTJRuenbldJg9hgro0L/UWi7AiBgnXcM52bPlGl3HIbSfFJECE/Uh63WDXK6tTELdEToaA==";
-            var requestBody = $"{{ \"data\": \"{_data}\", \"derSign\": \"{_derSign}\" }}";
+            //SendCoin sendCoin1 = new SendCoin();
+            //sendCoin1.Reciver = "1DMijhSj7gAxYpe5MSXAbJ6geTZ1owa9jz";
+            //sendCoin1.Amount = 0.001M;
+            //sendCoin1.Memo = "hello world";
+            //await httpRequest.PostData(sendCoin1, "http://127.0.0.1:45997/Wallet/SendCoin");
+
+            ///
+
+            //VerifyDataSignature modal = new VerifyDataSignature() { data = _data, derSign = _derSign };
+            //await httpRequest.PostData(modal, "http://127.0.0.1:45997/Wallet/VerifyDataSignature");
+
+            //string _data = "023fe12030b0e899f290b017297a948f9dba6eac1295221b1585da097ea555fac5";
+            //string _derSign = "MEQCIHeyLziXTBv60Q5gNBZ5gTJRuenbldJg9hgro0L/UWi7AiBgnXcM52bPlGl3HIbSfFJECE/Uh63WDXK6tTELdEToaA==";
+            //var requestBody = $"{{ \"data\": \"{_data}\", \"derSign\": \"{_derSign}\" }}";
             //StringContent content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
             //await httpRequest.PostData(content, "http://127.0.0.1:45997/Wallet/VerifyDataSignature");
 
-            VerifyDataSignature modal = new VerifyDataSignature() { data = _data, derSign = _derSign };
-            await httpRequest.PostData(modal, "http://127.0.0.1:45997/Wallet/VerifyDataSignature");
-
-            SendCoin sendCoin1 = new SendCoin();
-            sendCoin1.Reciver = "1DMijhSj7gAxYpe5MSXAbJ6geTZ1owa9jz";
-            sendCoin1.Amount = 0.001M;
-            sendCoin1.Memo = "hello world";
-            await httpRequest.PostData(sendCoin1, "http://127.0.0.1:45997/Wallet/SendCoin");
-
-            //test
+            ////test
 
             string recAddress;
 
@@ -292,20 +295,21 @@ namespace EKoin.Controllers
 
                 submitTransaction.DerSign = Convert.ToBase64String(signature_D_Hash.DerSign);
 
-                //test
-                bool validateData = libraryWallet.ValidateSubmitedTransaction(submitTransaction, Convert.ToDouble(configuration["TransactionTimePeriodMSec"]));
-                if (validateData)
-                {
-                    return Ok(submitTransaction);
-                }
-                else
-                {
-                    return StatusCode(500,submitTransaction);
-                }
-                //test
+                ////test
+                //bool validateData = libraryWallet.ValidateSubmitedTransaction(submitTransaction, Convert.ToDouble(configuration["TransactionTimePeriodMSec"]));
+                //if (validateData)
+                //{
+                //    return Ok(submitTransaction);
+                //}
+                //else
+                //{
+                //    return StatusCode(500,submitTransaction);
+                //}
+                ////test
 
                 //TODO propogate to TP, wait for response from tp, if tp respond with 200 and tid, send tid
-
+                string response = await httpRequest.SubmitTransaction(submitTransaction, mySettings.GetValue("currentTP", "mySettings.json"));
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -367,6 +371,43 @@ namespace EKoin.Controllers
             ////test
 
         }
+
+        [HttpGet("test")]
+        public IActionResult test()
+        {
+            string orgMsg = "Hello World! 7";
+
+            //you
+            Key_Pair youKeyPair = libraryWallet.GenPubPk();
+
+            //me
+            memoryCache.TryGetValue("myPrivateKey", out Key mykey);
+            PubKey mypubKey = new PubKey(mySettings.GetValue("my_pubx", "myWallet.json"));
+
+            byte[] dataBytes = Encoding.UTF8.GetBytes(orgMsg);
+            byte[] encryptedData = youKeyPair.Public_Key.Encrypt(dataBytes);
+            string encryptedDataBase64 = Convert.ToBase64String(encryptedData);
+            string encryptedDataHex = Convert.ToHexString(encryptedData);
+            //me
+
+            //u
+            byte[] receivedEncryptedData = Convert.FromBase64String(encryptedDataBase64);
+            byte[] receivedEncryptedDataHex=Convert.FromHexString(encryptedDataHex);
+            byte[] decryptedData = youKeyPair.Private_Key.Decrypt(receivedEncryptedData);
+            string decryptedMessage = Encoding.UTF8.GetString(decryptedData);
+            //u
+
+            if (decryptedMessage==orgMsg)
+            {
+                return Ok();
+            }
+            else
+            {
+                return StatusCode(400);
+            }
+
+        }
+
 
     }
 }

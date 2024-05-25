@@ -1,4 +1,5 @@
-﻿using Library;
+﻿using EKoin.Utility;
+using Library;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -14,6 +15,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using static Models.Wallet;
@@ -35,9 +38,10 @@ namespace EKoin.Controllers
         private readonly IMemoryCache memoryCache;
         private readonly IBalanceRepo balanceRepo;
         private readonly IConfiguration configuration;
-        
+        //private readonly IHttpClientFactory httpClient;
+        private readonly IHttpRequest httpRequest;
         public NetworkController(INodeRepo _nodeRepo, ILibraryWallet _libraryWallet, IMySettings _mySettings, ILedgerRepo _ledgerRepo
-            , IMemoryCache _memoryCache, IBalanceRepo _balanceRepo, IConfiguration _configuration)
+            , IMemoryCache _memoryCache, IBalanceRepo _balanceRepo, IConfiguration _configuration,IHttpRequest _httpRequest)//, IHttpClientFactory _httpClient
         {
             nodeRepo = _nodeRepo;
             libraryWallet = _libraryWallet;
@@ -46,6 +50,8 @@ namespace EKoin.Controllers
             memoryCache = _memoryCache;
             balanceRepo = _balanceRepo;
             configuration = _configuration;
+            //httpClient = _httpClient;
+            httpRequest = _httpRequest;
         }
 
         #endregion
@@ -95,8 +101,13 @@ namespace EKoin.Controllers
 
                     //sign my pubkx and send with dersign
                     string mypubkx = mySettings.GetValue("my_pubx", "myWallet.json");
-                    Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), mypubkx);
-                    return Ok(new { pubkx = mypubkx, derSign = signature_D_Hash.DerSign });
+                    
+                    DateTime dateTime = DateTime.UtcNow;
+                    int unixtime = dateTime.ToUnixTimestamp();
+                    byte[] dataBytes = Encoding.UTF8.GetBytes(mypubkx + unixtime);
+
+                    Signature_Data_Hash signature_D_Hash = libraryWallet.SignData(false, mySettings.GetValue("my_pkx", "myWallet.json"), dataBytes);
+                    return Ok(new { pubkx = mypubkx,dt=unixtime, derSign = signature_D_Hash.DerSign });
                 }
                 else
                 {
@@ -267,9 +278,11 @@ namespace EKoin.Controllers
                         if (senderBalance >= submitTransaction.Amount)
                         {
                             //check balance 2nd step OR let TP take care for detail balance check OR datail balance is also checek in nodes at ledger add time every 
-                            //TODO propogate to TP, wait for response from tp, if tp respond with 200 and tid, send tid
-                            
-                            return Ok();
+                            //propogate to TP, wait for response from tp, if tp respond with 200 and tid, send tid
+
+                            //HttpRequest httpRequest = new HttpRequest(httpClient, configuration);
+                            string response = await httpRequest.SubmitTransaction(submitTransaction, mySettings.GetValue("currentTP", "mySettings.json"));
+                            return Ok(response);
                         }
                         else
                         {
